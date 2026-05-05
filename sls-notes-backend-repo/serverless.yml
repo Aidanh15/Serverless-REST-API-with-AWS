@@ -4,6 +4,7 @@ plugins:
   - serverless-offline
 
 custom:
+  allowedOrigin: ${env:ALLOWED_ORIGIN, 'https://example.com'}
   allowedHeaders:
     - Accept
     - Content-Type
@@ -18,7 +19,7 @@ custom:
 
 provider:
   name: aws
-  runtime: nodejs12.x
+  runtime: nodejs22.x
   region: eu-west-1
   stage: prod
   memorySize: 128
@@ -26,6 +27,7 @@ provider:
   endpointType: regional
   environment:
     NOTES_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    ALLOWED_ORIGIN: ${self:custom.allowedOrigin}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -44,7 +46,7 @@ functions:
           path: note
           method: post
           cors:
-            origin: '*'
+            origin: ${self:custom.allowedOrigin}
             headers: ${self:custom.allowedHeaders}
 
   update-note:
@@ -55,7 +57,7 @@ functions:
           path: note
           method: patch
           cors:
-            origin: '*'
+            origin: ${self:custom.allowedOrigin}
             headers: ${self:custom.allowedHeaders}
 
   get-notes:
@@ -66,7 +68,7 @@ functions:
           path: notes
           method: get
           cors:
-            origin: '*'
+            origin: ${self:custom.allowedOrigin}
             headers: ${self:custom.allowedHeaders}
 
   get-note:
@@ -77,7 +79,7 @@ functions:
           path: note/n/{note_id}
           method: get
           cors:
-            origin: '*'
+            origin: ${self:custom.allowedOrigin}
             headers: ${self:custom.allowedHeaders}
 
   delete-note:
@@ -88,7 +90,7 @@ functions:
           path: note/t/{timestamp}
           method: delete
           cors:
-            origin: '*'
+            origin: ${self:custom.allowedOrigin}
             headers: ${self:custom.allowedHeaders}
 
 

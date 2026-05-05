@@ -1,11 +1,10 @@
 /*
     Route: GET /note/N/{note_id}
  */
-const AWS = require('aws-sdk');
-AWS.config.update({region: 'eu-west-1'});
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const util = require('./util.js');
-const _ = require('lodash');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const dynamodb = DynamoDBDocumentClient.from(new DynamoDBClient({region: 'eu-west-1'}));
 const tableName = process.env.NOTES_TABLE;
 
 
@@ -22,8 +21,8 @@ exports.handler = async (event) => {
             Limit: 1
         };
 
-        let data = await dynamodb.query(params).promise();
-        if(!_.isEmpty(data.Items)) {
+        let data = await dynamodb.send(new QueryCommand(params));
+        if(data.Items && data.Items.length > 0) {
             return {
                 statusCode: 200,
                 headers: util.getResponseHeaders(),
@@ -38,7 +37,7 @@ exports.handler = async (event) => {
     } catch (err) {
         console.log("Error", err);
         return {
-            satusCode: err.statusCode ? err.statusCode : 500,
+            statusCode: err.statusCode ? err.statusCode : 500,
             headers: util.getResponseHeaders(),
             body: JSON.stringify({
                 error: err.name ? err.name : "Exception",
@@ -47,4 +46,3 @@ exports.handler = async (event) => {
         };
     }
 }
-
