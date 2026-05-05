@@ -1,14 +1,12 @@
 /*
     Route: PATCH /note
  */
-const AWS = require('aws-sdk');
-AWS.config.update({region: 'eu-west-1'});
-
-const moment = require('moment');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const util = require('./util.js');
 
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const dynamodb = DynamoDBDocumentClient.from(new DynamoDBClient({region: 'eu-west-1'}));
 const tableName = process.env.NOTES_TABLE;
 
 
@@ -16,10 +14,10 @@ exports.handler = async (event) => {
     try{
         let item = JSON.parse(event.body).Item;
         item.user_id = util.getUserId(event.headers);
-        item.user_name = util.getUserId(event.headers);
-        item.expires = moment().add(90, 'days').unix();
+        item.user_name = util.getUserName(event.headers);
+        item.expires = Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60);
 
-       let data = await  dynamodb.put({
+       await dynamodb.send(new PutCommand({
             TableName: tableName,
             Item: item,
             ConditionExpression: '#t = :t',
@@ -29,7 +27,7 @@ exports.handler = async (event) => {
             ExpressionAttributeValues: {
                 ':t': item.timestamp
             }
-        }).promise();
+        }));
         return {
             statusCode: 200,
             headers: util.getResponseHeaders(),
@@ -38,7 +36,7 @@ exports.handler = async (event) => {
     } catch (err) {
         console.log("Error", err);
         return {
-            satusCode: err.statusCode ? err.statusCode : 500,
+            statusCode: err.statusCode ? err.statusCode : 500,
             headers: util.getResponseHeaders(),
             body: JSON.stringify({
                 error: err.name ? err.name : "Exception",
@@ -47,4 +45,3 @@ exports.handler = async (event) => {
         };
     }
 }
-
